@@ -25,3 +25,11 @@ class HumanPlayer(Player):
             except ValueError:
                 print('Invalid square. Try again.')
         return val
+    
+    
+class AI(Player):
+    def __init__(self, letter):
+        super().__init__(letter)
+        
+    def get_move(self, game, profondeur):
+        return game.action_IA(profondeur)

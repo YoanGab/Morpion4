@@ -1,8 +1,8 @@
-import time
-import math
-from player import *
-
+import playerClass as player
+import numpy as np
 EMPTY = " "
+AI = "X"
+HUMAN = "O"
 
 class TicTacToe():
     def __init__(self, size=12):
@@ -121,44 +121,92 @@ class TicTacToe():
                 if line == EMPTY:
                     available_moves.append([index_line, index_col])
         return available_moves
-        #return [i for i, x in enumerate(self.board) if x == " "]
-        
-    def evaluate(self):
-        pass
+
+    def action_IA(self, profondeur):
+        beta = np.inf
+        alpha = -np.inf
+        best_score = - np.inf
+        best_move = []
+        for move in self.available_moves():
+            self.board[move[0]][move[1]] == AI
+            score = self.minimax(profondeur, False, alpha, beta, move[0], move[1])
+            self.board[move[0]][move[1]] == EMPTY
+            if(score > best_score):
+                best_score = score
+                best_move = [move[0], move[1]]
+        return best_move
+
+
+        """
+        Calcule le score du plateau (score en fonction du nombre de X à la suite et du nombre de O à la suite)
+        """
+    def score_tableau(self):
+        return 1
     
-    def minimax(self, alpha, beta, maximizing, depth):
-        pass
+    def minimax(self, profondeur, maximize, alpha, beta, line, column):
+        letter = HUMAN if maximize else AI
+        Fin = self.winner(column, line, letter)
+        if(Fin):
+            return np.inf if letter == AI else -np.inf
 
-def play(game, x_player, o_player, print_game=True):
-    if print_game:
-        game.print_board()
-
-    letter = 'X'
-    while game.empty_squares():
-        if letter == 'O':
-            square = o_player.get_move(game)
+        if profondeur == 0:
+            return self.score_tableau()
+        
+        if(maximize):
+            Bscore = - np.inf
+            score = None
+            for i in range(self.size):
+                for j in range(self.size):
+                    if (self.board[i][j] == EMPTY):
+                        self.board[i][j] = AI
+                        score = self.minimax(profondeur - 1, False, alpha, beta, i, j)
+                        self.board[i][j] = EMPTY
+                        Bscore = max(score, Bscore)
+                        alpha = max(alpha, Bscore)
+                        if(beta <= alpha):
+                            break
+            return Bscore
         else:
-            square = x_player.get_move(game)
+            Bscore = np.inf
+            score = None
+            for i in range(self.size):
+                for j in range(self.size):
+                    if (self.board[i][j] == EMPTY):
+                        self.board[i][j] = HUMAN
+                        score = self.minimax(profondeur - 1, True, alpha, beta, i, j)
+                        self.board[i][j] = EMPTY
+                        Bscore = min(score, Bscore)
+                        beta = min(beta, Bscore)
+                        if(beta <= alpha):
+                            break
+            return Bscore
+
+
+def play(game, ai_player, human_player, profondeur):
+    game.print_board()
+
+    letter = AI
+    while game.empty_squares():
+        if letter == HUMAN:
+            square = human_player.get_move(game)
+        else:
+            square = ai_player.get_move(game, profondeur)
 
         if game.make_move(square, letter):
-            if print_game:
-                print(letter + " makes a move to square {}, {}".format(square[0] + 1, square[1] + 1))
-                game.print_board()
-                print('')
+            print(f"{letter} makes a move to square {square[0] + 1}, {square[1] + 1}")
+            #print(letter + " makes a move to square {}, {}".format(square[0] + 1, square[1] + 1))
+            game.print_board()
+            print('')
 
             if game.current_winner:
-                if print_game:
-                    print(letter + " wins!")
+                print(letter + " wins!")
                 return letter
-            letter = 'O' if letter == 'X' else 'X'
+            letter = HUMAN if letter == AI else AI
 
-        #time.sleep(.8)
-    if print_game:
-        print('It\'s a tie!')
-
+    print('It\'s a tie!')
 
 if __name__ == '__main__':
-    o_player = HumanPlayer('O')
-    x_player = HumanPlayer('X')
+    ai_player = player.AI(AI)
+    human_player = player.HumanPlayer(HUMAN)
     t = TicTacToe()
-    play(t, x_player, o_player, print_game=True)
+    play(t, ai_player, human_player, profondeur=1)
