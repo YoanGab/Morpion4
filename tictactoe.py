@@ -1,5 +1,6 @@
 import playerClass as player
 import numpy as np
+
 EMPTY = " "
 AI = "X"
 HUMAN = "O"
@@ -128,65 +129,114 @@ class TicTacToe():
         best_score = - np.inf
         best_move = []
         for move in self.available_moves():
-            self.board[move[0]][move[1]] == AI
-            score = self.minimax(profondeur, False, alpha, beta, move[0], move[1])
-            self.board[move[0]][move[1]] == EMPTY
+            column, line = move[0], move[1]
+            self.board[line][column] = AI
+            score = self.minimax(profondeur - 1, False, alpha, beta, column, line)
+            self.board[line][column] = EMPTY
+            
             if(score > best_score):
                 best_score = score
-                best_move = [move[0], move[1]]
+                best_move = [column, line]
         return best_move
-
-
-        """
-        Calcule le score du plateau (score en fonction du nombre de X à la suite et du nombre de O à la suite)
-        """
-    def score_tableau(self):
-        return 1
     
-    def minimax(self, profondeur, maximize, alpha, beta, line, column):
-        letter = HUMAN if maximize else AI
-        Fin = self.winner(column, line, letter)
-        if(Fin):
-            return np.inf if letter == AI else -np.inf
+    # TODO Calculer le score du plateau
+    def evaluate_board(self):
+        letters_3 = 10
+        letters_2 = 3
+        score = 0
+        for i in range(self.size):
+            same_letter = 0
+            for j in range(self.size):
+                if same_letter == 0:
+                    if self.board[i][j] != EMPTY:
+                        same_letter = 1
+                else:
+                    if self.board[i][j] != EMPTY:
+                        if self.board[i][j] == self.board[i][j - 1]:
+                            same_letter += 1
+                        else:
+                            if same_letter == 3:
+                                if self.board[i][j-1] == AI:
+                                    score += letters_3
+                                else:
+                                    score -= letters_3
+                            elif same_letter == 2:
+                                if self.board[i][j - 1] == AI:
+                                    score += letters_2
+                                else:
+                                    score -= letters_2
+                            same_letter = 1
+                    else:
+                        if same_letter == 3:
+                            if self.board[i][j - 1] == AI:
+                                score += letters_3
+                            else:
+                                score -= letters_3
+                        elif same_letter == 2:
+                            if self.board[i][j - 1] == AI:
+                                score += letters_2
+                            else:
+                                score -= letters_2
+                        same_letter = 0
+                    if j == self.size - 1:
+                        if same_letter == 3:
+                            if self.board[i][j - 1] == AI:
+                                score += letters_3
+                            else:
+                                score -= letters_3
+                        elif same_letter == 2:
+                            if self.board[i][j - 1] == AI:
+                                score += letters_2
+                            else:
+                                score -= letters_2                             
+        return score       
+    
+    def minimax(self, profondeur, maximize, alpha, beta, column, line):
+        player = HUMAN if maximize else AI # Dernier coup joué par l'humain s'il faut maximiser
+        is_end = self.winner(line, column, player)
+        if(is_end):
+            return 9999999 if player == AI else -9999999  # Score de 9999999 si l'IA gagne
 
         if profondeur == 0:
-            return self.score_tableau()
+            return self.evaluate_board()
         
         if(maximize):
-            Bscore = - np.inf
+            best_score = - np.inf
             score = None
-            for i in range(self.size):
-                for j in range(self.size):
-                    if (self.board[i][j] == EMPTY):
-                        self.board[i][j] = AI
-                        score = self.minimax(profondeur - 1, False, alpha, beta, i, j)
-                        self.board[i][j] = EMPTY
-                        Bscore = max(score, Bscore)
-                        alpha = max(alpha, Bscore)
-                        if(beta <= alpha):
-                            break
-            return Bscore
+            for move in self.available_moves():
+                column, line = move[0], move[1]
+                self.board[line][column] = AI
+                score = self.minimax(profondeur - 1, False, alpha, beta, column, line)
+                self.board[line][column] = EMPTY
+                best_score = max(score, best_score)
+                alpha = max(alpha, best_score)
+                if(beta <= alpha):
+                    break
+            return best_score
         else:
-            Bscore = np.inf
+            best_score = np.inf
             score = None
-            for i in range(self.size):
-                for j in range(self.size):
-                    if (self.board[i][j] == EMPTY):
-                        self.board[i][j] = HUMAN
-                        score = self.minimax(profondeur - 1, True, alpha, beta, i, j)
-                        self.board[i][j] = EMPTY
-                        Bscore = min(score, Bscore)
-                        beta = min(beta, Bscore)
-                        if(beta <= alpha):
-                            break
-            return Bscore
+            for move in self.available_moves():
+                column, line = move[0], move[1]
+                self.board[line][column] = HUMAN
+                score = self.minimax(profondeur - 1, True, alpha, beta, column, line)
+                self.board[line][column] = EMPTY
+                best_score = min(score, best_score)
+                beta = min(beta, best_score)
+                if(beta <= alpha):
+                    break
+            return best_score
 
 
-def play(game, ai_player, human_player, profondeur):
+def play(game, ai_player, human_player, start_player):
     game.print_board()
 
-    letter = AI
+    letter = start_player
     while game.empty_squares():
+        nb_empty_cells = game.num_empty_squares()
+        #TODO Calculer la profondeur en fonction du nombre de cases restantes
+        profondeur = np.ceil((game.size**2 - nb_empty_cells) / 35)
+        
         if letter == HUMAN:
             square = human_player.get_move(game)
         else:
@@ -194,7 +244,6 @@ def play(game, ai_player, human_player, profondeur):
 
         if game.make_move(square, letter):
             print(f"{letter} makes a move to square {square[0] + 1}, {square[1] + 1}")
-            #print(letter + " makes a move to square {}, {}".format(square[0] + 1, square[1] + 1))
             game.print_board()
             print('')
 
@@ -208,5 +257,5 @@ def play(game, ai_player, human_player, profondeur):
 if __name__ == '__main__':
     ai_player = player.AI(AI)
     human_player = player.HumanPlayer(HUMAN)
-    t = TicTacToe()
-    play(t, ai_player, human_player, profondeur=1)
+    game = TicTacToe()
+    play(game=game, ai_player=ai_player, human_player=human_player, start_player=AI)

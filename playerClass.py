@@ -32,4 +32,6 @@ class AI(Player):
         super().__init__(letter)
         
     def get_move(self, game, profondeur):
+        if game.num_empty_squares() == game.size**2:
+            return [int(game.size/2), int(game.size/2)]
         return game.action_IA(profondeur)
